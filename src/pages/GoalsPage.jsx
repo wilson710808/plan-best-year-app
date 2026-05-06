@@ -1,215 +1,96 @@
 import { useState } from 'react'
+import { useApp } from '../contexts/AppContext'
 
-const categories = [
-  { id: 'career', name: '事业', icon: '💼', color: '#6C5CE7' },
-  { id: 'health', name: '健康', icon: '💪', color: '#00B894' },
-  { id: 'finance', name: '财务', icon: '💰', color: '#FDCB6E' },
-  { id: 'relationship', name: '关系', icon: '❤️', color: '#FF7675' },
-  { id: 'growth', name: '成长', icon: '📚', color: '#74B9FF' },
-  { id: 'contribution', name: '贡献', icon: '🌍', color: '#A29BFE' }
-]
+export default function GoalsPage({ navigate }) {
+  const { t, goals, deleteGoal, GOAL_CATEGORIES, unlockedFeatures } = useApp()
+  const [filter, setFilter] = useState('all')
 
-const sampleGoals = [
-  { id: 1, title: '完成产品开发并上线', category: 'career', progress: 65, deadline: '2026-06-30' },
-  { id: 2, title: '每周跑步3次，每次30分钟', category: 'health', progress: 40, deadline: '2026-12-31' },
-  { id: 3, title: '建立6个月应急基金', category: 'finance', progress: 50, deadline: '2026-10-01' },
-]
-
-function GoalsPage({ userData, updateUserData }) {
-  const [goals, setGoals] = useState(sampleGoals)
-  const [showAddGoal, setShowAddGoal] = useState(false)
-  const [newGoal, setNewGoal] = useState({ title: '', category: 'career', deadline: '' })
-
-  const addGoal = () => {
-    if (!newGoal.title.trim()) return
-    
-    const goal = {
-      id: Date.now(),
-      title: newGoal.title,
-      category: newGoal.category,
-      progress: 0,
-      deadline: newGoal.deadline || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-    }
-    
-    setGoals(prev => [...prev, goal])
-    setNewGoal({ title: '', category: 'career', deadline: '' })
-    setShowAddGoal(false)
-  }
-
-  const totalProgress = goals.length > 0 
-    ? Math.round(goals.reduce((acc, g) => acc + g.progress, 0) / goals.length)
-    : 0
+  const filtered = filter === 'all' ? goals : goals.filter(g => g.category === filter)
 
   return (
     <div>
-      <h2 style={{ marginBottom: '20px', fontSize: '20px' }}>🎯 我的目标</h2>
-
-      {/* 统计概览 */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-value">{goals.length}</div>
-          <div className="stat-label">目标总数</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{totalProgress}%</div>
-          <div className="stat-label">整体进度</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{goals.filter(g => g.progress >= 50).length}</div>
-          <div className="stat-label">进行中</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{goals.filter(g => g.progress === 100).length}</div>
-          <div className="stat-label">已完成</div>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h3>🎯 {t.nav.goals}</h3>
+        <button className="btn btn-primary" style={{ width: 'auto', padding: '10px 20px' }}
+          onClick={() => navigate('add-goal')}>+ {t.goals.add}</button>
       </div>
 
-      {/* 进度总览 */}
-      <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <span style={{ fontWeight: '600' }}>年度目标进度</span>
-          <span style={{ color: 'var(--primary)', fontWeight: '600' }}>{totalProgress}%</span>
+      {/* Goal limit warning */}
+      {goals.filter(g => !g.completed).length > 5 && (
+        <div className="card" style={{ borderLeft: '4px solid var(--warning)', marginBottom: 16 }}>
+          <p style={{ color: 'var(--warning)', fontWeight: 600 }}>⚠️ {t.goals.limitWarning}</p>
+          <p style={{ fontSize: 13 }}>{t.goals.limit}</p>
         </div>
-        <div className="goal-progress" style={{ height: '12px' }}>
-          <div className="goal-progress-bar" style={{ width: `${totalProgress}%` }} />
-        </div>
+      )}
+
+      {/* Filter tabs */}
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 12 }}>
+        <div className={`date-tab ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>全部</div>
+        {GOAL_CATEGORIES.map(c => (
+          <div key={c.id} className={`date-tab ${filter === c.id ? 'active' : ''}`}
+            onClick={() => setFilter(c.id)}>{c.icon} {t.goals.categories[c.id]}</div>
+        ))}
       </div>
 
-      {/* 目标列表 */}
-      {goals.map(goal => {
-        const category = categories.find(c => c.id === goal.category)
+      {/* Goal list */}
+      {filtered.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', padding: 40 }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🎯</div>
+          <p>{t.common.noData}</p>
+          <button className="btn btn-primary" style={{ marginTop: 16 }}
+            onClick={() => navigate('add-goal')}>{t.goals.add}</button>
+        </div>
+      ) : filtered.map(goal => {
+        const cat = GOAL_CATEGORIES.find(c => c.id === goal.category) || GOAL_CATEGORIES[0]
         return (
-          <div key={goal.id} className="goal-card">
+          <div key={goal.id} className="goal-card" style={{ cursor: 'pointer' }}
+            onClick={() => navigate('goal-detail', { goal })}>
             <div className="goal-header">
-              <span className="goal-title">{goal.icon || category?.icon} {goal.title}</span>
-              <span className="goal-category" style={{ 
-                background: `${category?.color}20`,
-                color: category?.color
-              }}>
-                {category?.name}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>{cat.icon}</span>
+                <span className="goal-title">{goal.title}</span>
+              </div>
+              <span className="goal-category" style={{ background: `${cat.color}20`, color: cat.color }}>
+                {t.goals.categories[goal.category]}
               </span>
             </div>
             <div className="goal-progress">
-              <div 
-                className="goal-progress-bar" 
-                style={{ 
-                  width: `${goal.progress}%`,
-                  background: `linear-gradient(90deg, ${category?.color}, ${category?.color}80)`
-                }} 
-              />
+              <div className="goal-progress-bar" style={{ width: `${goal.progress || 0}%` }} />
             </div>
             <div className="goal-stats">
-              <span>{goal.progress}% 完成</span>
-              <span>📅 {goal.deadline}</span>
+              <span>{goal.progress || 0}%</span>
+              {goal.deadline && <span>📅 {goal.deadline}</span>}
             </div>
-            <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
-              <button 
-                style={{ 
-                  flex: 1,
-                  padding: '8px',
-                  background: 'var(--border)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer'
-                }}
-                onClick={() => {
-                  setGoals(prev => prev.map(g => 
-                    g.id === goal.id ? { ...g, progress: Math.max(0, g.progress - 10) } : g
-                  ))
-                }}
-              >
-                -10%
-              </button>
-              <button 
-                style={{ 
-                  flex: 1,
-                  padding: '8px',
-                  background: category?.color || 'var(--primary)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer'
-                }}
-                onClick={() => {
-                  setGoals(prev => prev.map(g => 
-                    g.id === goal.id ? { ...g, progress: Math.min(100, g.progress + 10) } : g
-                  ))
-                }}
-              >
-                +10%
-              </button>
-            </div>
+            {/* 3 Whys preview */}
+            {goal.why1 && (
+              <div style={{ marginTop: 8, padding: '8px 12px', background: 'var(--bg)', borderRadius: 8, fontSize: 13, color: 'var(--text-light)' }}>
+                💎 {goal.why1.substring(0, 40)}{goal.why1.length > 40 ? '...' : ''}
+              </div>
+            )}
           </div>
         )
       })}
 
-      {/* 添加目标 */}
-      {showAddGoal ? (
-        <div className="card">
-          <h3 style={{ marginBottom: '16px' }}>添加新目标</h3>
-          <div className="input-group">
-            <label>目标名称</label>
-            <input 
-              type="text"
-              value={newGoal.title}
-              onChange={(e) => setNewGoal(prev => ({ ...prev, title: e.target.value }))}
-              placeholder="例如：完成马拉松"
-            />
-          </div>
-          <div className="input-group">
-            <label>类别</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {categories.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => setNewGoal(prev => ({ ...prev, category: cat.id }))}
-                  style={{
-                    padding: '8px 16px',
-                    border: `2px solid ${newGoal.category === cat.id ? cat.color : 'var(--border)'}`,
-                    background: newGoal.category === cat.id ? `${cat.color}20` : 'white',
-                    borderRadius: '20px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  {cat.icon} {cat.name}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="input-group">
-            <label>截止日期</label>
-            <input 
-              type="date"
-              value={newGoal.deadline}
-              onChange={(e) => setNewGoal(prev => ({ ...prev, deadline: e.target.value }))}
-            />
-          </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button 
-              className="btn btn-secondary"
-              onClick={() => setShowAddGoal(false)}
-            >
-              取消
-            </button>
-            <button className="btn btn-primary" onClick={addGoal}>
-              添加目标
-            </button>
-          </div>
+      {/* Sub pages */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 20 }}>
+        <div className="card" style={{ textAlign: 'center', cursor: 'pointer' }} onClick={() => navigate('abandon')}>
+          <div style={{ fontSize: 24 }}>🗑️</div>
+          <div style={{ fontSize: 13, marginTop: 4 }}>{t.goals.abandonList}</div>
         </div>
-      ) : (
-        <button 
-          className="btn btn-primary"
-          onClick={() => setShowAddGoal(true)}
-          style={{ marginTop: '16px' }}
-        >
-          ➕ 添加新目标
-        </button>
-      )}
+        <div className="card" style={{ textAlign: 'center', cursor: 'pointer' }} onClick={() => navigate('past-review')}>
+          <div style={{ fontSize: 24 }}>📜</div>
+          <div style={{ fontSize: 13, marginTop: 4 }}>{t.goals.pastReview}</div>
+        </div>
+        <div className="card" style={{ textAlign: 'center', cursor: 'pointer' }} onClick={() => navigate('milestones')}>
+          <div style={{ fontSize: 24 }}>🏆</div>
+          <div style={{ fontSize: 13, marginTop: 4 }}>{t.goals.milestoneWall}</div>
+        </div>
+        <div className="card" style={{ textAlign: 'center', cursor: 'pointer' }}
+          onClick={() => unlockedFeatures.goalTracking && navigate('calibration')}>
+          <div style={{ fontSize: 24 }}>📐</div>
+          <div style={{ fontSize: 13, marginTop: 4 }}>{t.goals.periodCalibration}</div>
+        </div>
+      </div>
     </div>
   )
 }
-
-export default GoalsPage

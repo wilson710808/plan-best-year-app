@@ -1,178 +1,116 @@
 import { useState } from 'react'
+import { useApp } from '../contexts/AppContext'
 
-const steps = [
-  { 
-    id: 1, 
-    title: '打开认知', 
-    icon: '💡',
-    questions: [
-      '过去一年，你学到的最重要的一件事是什么？',
-      '如果没有任何限制，你最想成为什么样的人？',
-      '什么对你来说真正重要？（家庭、事业、健康、成长、贡献...）'
-    ]
-  },
-  { 
-    id: 2, 
-    title: '挖掘需求', 
-    icon: '🔍',
-    questions: [
-      '你为什么想要这个目标？',
-      '达成这个目标后，你的生活会有什么不同？',
-      '这个目标背后，你真正的渴望是什么？'
-    ]
-  },
-  { 
-    id: 3, 
-    title: '设定目标', 
-    icon: '🎯',
-    questions: [
-      '用 SMART 原则描述你的目标',
-      '你的季度里程碑是什么？',
-      '每周需要投入多少时间？'
-    ]
-  },
-  { 
-    id: 4, 
-    title: '陪伴执行', 
-    icon: '🤝',
-    questions: [
-      '今天最重要的一件事是什么？',
-      '有什么阻碍你前进？',
-      '明天你要做出什么改变？'
-    ]
-  }
+const GUIDE_STEPS = [
+  { id: 'believe', titleKey: 'believe', questions: [
+    '過去一年，你學到的最重要的一件事是什麼？',
+    '如果沒有任何限制，你最想成為什麼樣的人？',
+    '什麼對你來說真正重要？（家庭、事業、健康、成長、貢獻...）',
+    '有哪些信念正在限制你？試著把它們寫下來，然後轉化為正向信念。'
+  ]},
+  { id: 'past', titleKey: 'past', questions: [
+    '過去一年最大的成就是什麼？',
+    '有什麼遺憾或未完成的事？',
+    '從這些經歷中你學到了什麼教訓？',
+    '如果給過去一年打分，你會打幾分？為什麼？'
+  ]},
+  { id: 'why', titleKey: 'why', questions: [
+    '你今年最想實現的目標是什麼？',
+    '為什麼這個目標對你重要？（第一層為什麼）',
+    '為什麼那個原因對你重要？（第二層為什麼）',
+    '最深層的渴望是什麼？（第三層為什麼）'
+  ]},
+  { id: 'smarter', titleKey: 'smarter', questions: [
+    '你的目標是否具體明確？(Specific)',
+    '你如何衡量進度？(Measurable)',
+    '這個目標對你目前是否可達成？(Achievable)',
+    '這個目標是否需要你走出舒適圈？(Risky)',
+    '目標有明確的截止日期嗎？(Time-bound)',
+    '想到這個目標你感到興奮嗎？(Exciting)',
+    '這個目標與你的人生方向相關嗎？(Relevant)'
+  ]},
+  { id: 'execute', titleKey: 'execute', questions: [
+    '你的第一步行動是什麼？',
+    '你每天/每週會投入多少時間？',
+    '誰可以成為你的問責夥伴？',
+    '如果遇到挫折，你的備用計劃是什麼？'
+  ]}
 ]
 
-function GuidePage({ userData, updateUserData }) {
-  const [currentStep, setCurrentStep] = useState(0)
+export default function GuidePage({ navigate }) {
+  const { t, addBelief, addGoal, setReviews } = useApp()
+  const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState({})
-  const [chatHistory, setChatHistory] = useState([
-    { type: 'ai', text: '你好！我是你的 AI 规划教练。准备好了吗？' }
-  ])
-  const [inputText, setInputText] = useState('')
+  const currentStep = GUIDE_STEPS[step]
 
-  const handleAnswer = (questionIndex, answer) => {
-    setAnswers(prev => ({ ...prev, [`step${currentStep}_q${questionIndex}`]: answer }))
-    setChatHistory(prev => [...prev, 
-      { type: 'user', text: answer },
-      { type: 'ai', text: steps[currentStep].questions[questionIndex + 1] || '很好！继续下一个问题...' }
-    ])
+  const setAnswer = (qi, value) => {
+    setAnswers(prev => ({ ...prev, [`${step}-${qi}`]: value }))
   }
 
-  const handleInputSubmit = () => {
-    if (!inputText.trim()) return
-    setChatHistory(prev => [...prev, { type: 'user', text: inputText }])
-    
-    // AI 回复逻辑
-    const responses = [
-      '这是一个很好的开始！请继续深入...',
-      '我理解你的想法。让我们继续探索...',
-      '很好！这就是你内心真正的渴望...',
-      '继续说说你的具体计划是什么？'
-    ]
-    setTimeout(() => {
-      setChatHistory(prev => [...prev, { 
-        type: 'ai', 
-        text: responses[Math.floor(Math.random() * responses.length)]
-      }])
-    }, 800)
-    
-    setInputText('')
-  }
-
-  const nextStep = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(prev => prev + 1)
-      setChatHistory(prev => [...prev, { 
-        type: 'ai', 
-        text: `太棒了！现在进入第 ${currentStep + 2} 步：${steps[currentStep + 1].title}` 
-      }])
+  const handleNext = () => {
+    if (step < GUIDE_STEPS.length - 1) setStep(step + 1)
+    else {
+      // Save belief if step 0
+      const limitingAnswer = answers['0-3']
+      if (limitingAnswer) {
+        addBelief({ limiting: limitingAnswer, reframed: '', category: 'selfLimiting' })
+      }
+      // Save goal if step 2
+      const goalAnswer = answers['2-0']
+      if (goalAnswer) {
+        addGoal({ title: goalAnswer, category: 'growth', why1: answers['2-1'] || '', why2: answers['2-2'] || '', why3: answers['2-3'] || '', deadline: '' })
+      }
+      // Save review if step 1
+      const pastAchievement = answers['1-0']
+      if (pastAchievement) {
+        setReviews(prev => [...prev, { id: Date.now(), type: 'past', achievements: pastAchievement, lessons: answers['1-2'] || '', date: new Date().toISOString() }])
+      }
+      navigate('dashboard')
     }
   }
 
   return (
     <div>
-      {/* 进度指示器 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+        <button className="btn-icon" onClick={() => navigate('dashboard')}>←</button>
+        <h3>🧭 五步驟引導規劃</h3>
+      </div>
+
+      {/* Progress */}
       <div className="progress-steps">
-        {steps.map((step, index) => (
-          <div 
-            key={step.id}
-            className={`progress-step ${index === currentStep ? 'active' : ''} ${index < currentStep ? 'completed' : ''}`}
-          >
-            <div className="step-number">
-              {index < currentStep ? '✓' : step.id}
-            </div>
-            <span className="step-label">{step.title}</span>
+        {GUIDE_STEPS.map((s, i) => (
+          <div key={s.id} className={`progress-step ${i === step ? 'active' : (i < step ? 'completed' : '')}`}>
+            <div className="step-number">{i < step ? '✓' : i + 1}</div>
+            <div className="step-label">{t.steps[s.titleKey]?.title || s.titleKey}</div>
           </div>
         ))}
       </div>
 
-      {/* AI 对话区域 */}
+      {/* Current Step */}
       <div className="card">
-        <div className="chat-container">
-          {chatHistory.map((msg, index) => (
-            <div key={index} className={`chat-bubble ${msg.type}`}>
-              {msg.text}
-            </div>
-          ))}
-        </div>
+        <h3 style={{ marginBottom: 16 }}>
+          {step + 1}. {t.steps[currentStep.titleKey]?.title}
+        </h3>
+        <p style={{ color: 'var(--text-light)', marginBottom: 20 }}>
+          {t.steps[currentStep.titleKey]?.desc}
+        </p>
 
-        {/* 问题选项 */}
-        {currentStep < steps.length && (
-          <div>
-            <h4 style={{ marginBottom: '12px', color: 'var(--primary)' }}>
-              {steps[currentStep].icon} {steps[currentStep].title}
-            </h4>
-            {steps[currentStep].questions.map((q, qIndex) => (
-              <div key={qIndex} className="input-group">
-                <label>{q}</label>
-                <textarea 
-                  rows="3"
-                  placeholder="输入你的答案..."
-                  onBlur={(e) => handleAnswer(qIndex, e.target.value)}
-                />
-              </div>
-            ))}
+        {currentStep.questions.map((q, qi) => (
+          <div key={qi} className="input-group">
+            <label>{q}</label>
+            <textarea rows={3} value={answers[`${step}-${qi}`] || ''}
+              onChange={e => setAnswer(qi, e.target.value)}
+              placeholder="寫下你的想法..." />
           </div>
-        )}
+        ))}
+      </div>
 
-        {/* 输入框 */}
-        <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
-          <input 
-            type="text"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleInputSubmit()}
-            placeholder="输入你的想法..."
-            style={{ 
-              flex: 1,
-              padding: '12px 16px',
-              border: '2px solid var(--border)',
-              borderRadius: '12px',
-              fontSize: '15px'
-            }}
-          />
-          <button 
-            className="btn btn-primary"
-            style={{ width: 'auto', padding: '12px 20px' }}
-            onClick={handleInputSubmit}
-          >
-            发送
-          </button>
-        </div>
-
-        {currentStep < steps.length - 1 && (
-          <button 
-            className="btn btn-secondary"
-            style={{ marginTop: '16px' }}
-            onClick={nextStep}
-          >
-            进入下一步 →
-          </button>
-        )}
+      <div style={{ display: 'flex', gap: 12 }}>
+        {step > 0 && <button className="btn btn-secondary" onClick={() => setStep(step - 1)}>{t.common.previous}</button>}
+        <button className="btn btn-primary" onClick={handleNext}>
+          {step === GUIDE_STEPS.length - 1 ? t.common.done : t.common.next}
+        </button>
       </div>
     </div>
   )
 }
-
-export default GuidePage
