@@ -1,7 +1,7 @@
 import { useApp } from '../contexts/AppContext'
 
 export default function SettingsPage({ navigate }) {
-  const { t, lang, setLang, darkMode, setDarkMode, coachStyle, setCoachStyle, daysSinceFirstUse, unlockedFeatures, t: i18n } = useApp()
+  const { t, lang, setLang, darkMode, setDarkMode, coachStyle, setCoachStyle, daysSinceFirstUse, unlockedFeatures, isSuperUser, t: i18n } = useApp()
   const styleList = i18n.ai.styles ? Object.entries(i18n.ai.styles).map(([id, s]) => ({ id, ...s })) : []
   const languages = [{ id: 'zh-TW', label: '繁體中文' }, { id: 'zh-CN', label: '简体中文' }, { id: 'en', label: 'English' }]
 
@@ -56,6 +56,11 @@ export default function SettingsPage({ navigate }) {
       {/* Unlock Progress */}
       <div className="card">
         <h4>🔓 {t.settings.unlockInfo}</h4>
+        {isSuperUser && (
+          <div style={{ padding: '8px 12px', marginBottom: 8, background: 'var(--primary)', color: 'white', borderRadius: 8, fontSize: 13, fontWeight: 600 }}>
+            🦀 Super User — 全部功能已解鎖
+          </div>
+        )}
         <div style={{ marginTop: 8 }}>
           {[
             { day: 1, label: t.unlock.day1 },
@@ -64,7 +69,7 @@ export default function SettingsPage({ navigate }) {
             { day: 14, label: t.unlock.day14 }
           ].map(u => (
             <div key={u.day} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0' }}>
-              <span style={{ width: 24, textAlign: 'center' }}>{daysSinceFirstUse >= u.day ? '✅' : '🔒'}</span>
+              <span style={{ width: 24, textAlign: 'center' }}>{(isSuperUser || daysSinceFirstUse >= u.day) ? '✅' : '🔒'}</span>
               <span style={{ flex: 1, fontSize: 14 }}>D{u.day} {u.label}</span>
             </div>
           ))}

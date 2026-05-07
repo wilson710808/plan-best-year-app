@@ -1,7 +1,7 @@
 import { useApp } from '../contexts/AppContext'
 
 export default function DashboardPage({ navigate }) {
-  const { t, userName, goals, currentStreak, unlockedFeatures, checkIns, beliefs, milestones, daysSinceFirstUse } = useApp()
+  const { t, userName, goals, currentStreak, unlockedFeatures, checkIns, beliefs, milestones, daysSinceFirstUse, isSuperUser } = useApp()
   const today = new Date().toISOString().split('T')[0]
   const todayCheckIns = checkIns.filter(c => c.date === today && c.completed).length
   const activeGoals = goals.filter(g => !g.completed)
@@ -75,15 +75,15 @@ export default function DashboardPage({ navigate }) {
 
       {/* Unlock Progress */}
       <div className="card" style={{ marginTop: 16 }}>
-        <h4>{t.settings.unlockInfo}</h4>
+        <h4>{t.settings.unlockInfo} {isSuperUser && <span style={{ color: 'var(--primary)', fontSize: 12 }}>Super User 🦀</span>}</h4>
         <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
           {[1, 3, 7, 14].map(d => (
             <div key={d} style={{ flex: 1, textAlign: 'center', padding: '8px 4px', borderRadius: 8,
-              background: daysSinceFirstUse >= d ? 'rgba(0,184,148,0.1)' : 'var(--border)',
-              color: daysSinceFirstUse >= d ? 'var(--success)' : 'var(--text-light)', fontSize: 12
+              background: (isSuperUser || daysSinceFirstUse >= d) ? 'rgba(0,184,148,0.1)' : 'var(--border)',
+              color: (isSuperUser || daysSinceFirstUse >= d) ? 'var(--success)' : 'var(--text-light)', fontSize: 12
             }}>
               <div style={{ fontWeight: 700 }}>D{d}</div>
-              <div>{daysSinceFirstUse >= d ? '✅' : '🔒'}</div>
+              <div>{(isSuperUser || daysSinceFirstUse >= d) ? '✅' : '🔒'}</div>
             </div>
           ))}
         </div>

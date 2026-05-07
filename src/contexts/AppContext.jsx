@@ -57,17 +57,22 @@ export function AppProvider({ children }) {
   const [challengeDay, setChallengeDay] = useLocalStorage('challengeDay', 0)
   const [challengePhase, setChallengePhase] = useLocalStorage('challengePhase', '') // 'launch' | 'challenge' | 'done'
 
+  // Super user check — Wilson gets all features unlocked for testing
+  const isSuperUser = userName === 'Wilson'
+
   // Derived
   const t = translations[lang] || zhTW
   const daysSinceFirstUse = Math.floor((Date.now() - new Date(firstUseDate).getTime()) / 86400000) + 1
 
-  // Feature unlock
-  const unlockedFeatures = {
-    basic: daysSinceFirstUse >= 1,
-    goalTracking: daysSinceFirstUse >= 3,
-    aiCoach: daysSinceFirstUse >= 7,
-    advancedAnalytics: daysSinceFirstUse >= 14
-  }
+  // Feature unlock — super user bypasses all day-based restrictions
+  const unlockedFeatures = isSuperUser
+    ? { basic: true, goalTracking: true, aiCoach: true, advancedAnalytics: true }
+    : {
+        basic: daysSinceFirstUse >= 1,
+        goalTracking: daysSinceFirstUse >= 3,
+        aiCoach: daysSinceFirstUse >= 7,
+        advancedAnalytics: daysSinceFirstUse >= 14
+      }
 
   // Current streak
   const currentStreak = useCallback(() => {
@@ -164,7 +169,7 @@ export function AppProvider({ children }) {
     lang, setLang, darkMode, setDarkMode, t, userName, setUserName,
     coachStyle, setCoachStyle, onboarded, setOnboarded,
     // Feature unlock
-    unlockedFeatures, daysSinceFirstUse,
+    unlockedFeatures, daysSinceFirstUse, isSuperUser,
     // Data
     goals, addGoal, updateGoal, deleteGoal,
     checkIns, doCheckIn, makeUpCheckIn, currentStreak: currentStreak(),
