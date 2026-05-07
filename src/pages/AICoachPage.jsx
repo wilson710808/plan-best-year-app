@@ -19,6 +19,9 @@ export default function AICoachPage({ navigate }) {
 
   const messages = aiConversations[convKey] || []
 
+  // Must be defined BEFORE any reference (fix: moved above the early return)
+  const COACH_STYLES_LIST = t.ai.styles ? Object.entries(t.ai.styles).map(([id, s]) => ({ id, ...s })) : []
+
   if (!unlockedFeatures.aiCoach) {
     return (
       <div className="card" style={{ textAlign: 'center', padding: 40 }}>
@@ -27,8 +30,6 @@ export default function AICoachPage({ navigate }) {
       </div>
     )
   }
-
-  const currentStyle = COACH_STYLES_LIST.find(s => s.id === coachStyle) || COACH_STYLES_LIST[0]
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return
@@ -55,8 +56,6 @@ export default function AICoachPage({ navigate }) {
     setLoading(false)
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
   }
-
-  const COACH_STYLES_LIST = t.ai.styles ? Object.entries(t.ai.styles).map(([id, s]) => ({ id, ...s })) : []
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 140px)' }}>
@@ -93,8 +92,7 @@ export default function AICoachPage({ navigate }) {
         <input value={input} onChange={e => setInput(e.target.value)}
           placeholder={t.ai.inputPlaceholder}
           onKeyDown={e => e.key === 'Enter' && sendMessage()}
-          style={{ flex: 1, padding: '12px 16px', border: '2px solid var(--border)', borderRadius: 12, fontSize: 15 }}
-        />
+          style={{ flex: 1, padding: '12px 16px', border: '2px solid var(--border)', borderRadius: 12, fontSize: 15 }} />
         <button className="btn btn-primary" style={{ width: 'auto', padding: '12px 20px' }}
           onClick={sendMessage} disabled={loading}>{t.ai.send}</button>
       </div>

@@ -6,6 +6,7 @@ export default function CheckInPage({ navigate }) {
   const [showMakeUp, setShowMakeUp] = useState(null)
   const [makeUpReason, setMakeUpReason] = useState('')
   const [celebration, setCelebration] = useState(null)
+
   const today = new Date().toISOString().split('T')[0]
   const activeGoals = goals.filter(g => !g.completed)
 
@@ -31,7 +32,6 @@ export default function CheckInPage({ navigate }) {
 
   const isCheckedToday = (goalId) => checkIns.some(c => c.taskId === goalId && c.date === today && c.completed)
 
-  // Focus mode entry
   if (!unlockedFeatures.goalTracking) {
     return (
       <div className="card" style={{ textAlign: 'center', padding: 40 }}>
@@ -46,10 +46,8 @@ export default function CheckInPage({ navigate }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h3>✅ {t.checkIn.title}</h3>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-secondary" style={{ width: 'auto', padding: '8px 12px', fontSize: 12 }}
-            onClick={() => navigate('focus')}>🧘 {t.checkIn.focusMode}</button>
-          <button className="btn btn-primary" style={{ width: 'auto', padding: '8px 12px', fontSize: 12 }}
-            onClick={handleBatchComplete}>{t.checkIn.batchComplete}</button>
+          <button className="btn btn-secondary" style={{ width: 'auto', padding: '8px 12px', fontSize: 12 }} onClick={() => navigate('focus')}>🧘 {t.checkIn.focusMode}</button>
+          <button className="btn btn-primary" style={{ width: 'auto', padding: '8px 12px', fontSize: 12 }} onClick={handleBatchComplete}>{t.checkIn.batchComplete}</button>
         </div>
       </div>
 
@@ -63,9 +61,16 @@ export default function CheckInPage({ navigate }) {
       )}
 
       {/* Goal check-in list */}
+      {activeGoals.length === 0 && (
+        <div className="card" style={{ textAlign: 'center', padding: 40 }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🎯</div>
+          <p>尚未建立目標，請先到目標頁新增目標</p>
+          <button className="btn btn-primary" style={{ marginTop: 12 }} onClick={() => navigate('add-goal')}>+ 新增目標</button>
+        </div>
+      )}
       {activeGoals.map(goal => {
         const checked = isCheckedToday(goal.id)
-        c = (GOAL_CATEGORIES).find(c => c.id === goal.category)
+        const cat = GOAL_CATEGORIES.find(c => c.id === goal.category)
         return (
           <div key={goal.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ flex: 1 }}>
@@ -78,8 +83,7 @@ export default function CheckInPage({ navigate }) {
               <div style={{ fontSize: 24 }}>✅</div>
             ) : (
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn btn-primary" style={{ width: 'auto', padding: '8px 16px', fontSize: 13 }}
-                  onClick={() => handleCheckIn(goal.id)}>{t.checkIn.completed}</button>
+                <button className="btn btn-primary" style={{ width: 'auto', padding: '8px 16px', fontSize: 13 }} onClick={() => handleCheckIn(goal.id)}>{t.checkIn.completed}</button>
               </div>
             )}
           </div>
