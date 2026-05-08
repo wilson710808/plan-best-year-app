@@ -164,6 +164,45 @@ export function AppProvider({ children }) {
     }
   }, [setPartners])
 
+  // Build structured goals context for AI prompts
+  const getGoalsContext = useCallback(() => {
+    const activeGoals = goals.filter(g => !g.completed)
+    const completedGoals = goals.filter(g => g.completed)
+    if (activeGoals.length === 0 && completedGoals.length === 0) return ''
+
+    let ctx = '\n【用戶目標信息】'
+    if (activeGoals.length > 0) {
+      ctx += `\n正在進行的目標（${activeGoals.length}個）：`
+      activeGoals.forEach((g, i) => {
+        ctx += `\n${i + 1}. 「${g.title}」 (${t.goals.categories[g.category] || g.category}) — 進度${g.progress || 0}%`
+        if (g.deadline) ctx += `，截止${g.deadline}`
+        if (g.why1) ctx += `；核心動機：${g.why1}`
+        if (g.why2) ctx += ` → ${g.why2}`
+        if (g.why3) ctx += ` → ${g.why3}`
+        if (g.leadingIndicators?.length) ctx += `；領先指標：${g.leadingIndicators.join('、')}`
+        if (g.laggingIndicators?.length) ctx += `；滯後指標：${g.laggingIndicators.join('、')}`
+      })
+    }
+    if (completedGoals.length > 0) {
+      ctx += `\n已完成的目標（${completedGoals.length}個）：${completedGoals.map(g => `「${g.title}」`).join('、')}`
+    }
+    // Recent check-in status
+    const today = new Date().toISOString().split('T')[0]
+    const todayCheckIns = checkIns.filter(c => c.date === today && c.completed)
+    if (todayCheckIns.length > 0) {
+      ctx += `\n今日已打卡目標數：${todayCheckIns.length}/${activeGoals.length}`
+    } else if (activeGoals.length > 0) {
+      ctx += '\n今日尚未打卡任何目標。'
+    }
+    // Beliefs context
+    const unreframed = beliefs.filter(b => !b.reframed)
+    if (unreframed.length > 0) {
+      ctx += `\n待轉化的限制性信念：${unreframed.map(b => `「${b.limiting}」`).join('、')}`
+    }
+    ctx += '\n請基於以上目標信息來引導用戶，給出針對性建議。'
+    return ctx
+  }, [goals, checkIns, beliefs, t])
+
   const value = {
     // Settings
     lang, setLang, darkMode, setDarkMode, t, userName, setUserName,
@@ -181,6 +220,8 @@ export function AppProvider({ children }) {
     energyRecords, addEnergyRecord,
     aiConversations, setAiConversations,
     challengeDay, setChallengeDay, challengePhase, setChallengePhase,
+    // AI context helper
+    getGoalsContext,
     // Constants
     COACH_STYLES, GOAL_CATEGORIES, BELIEF_CATEGORIES
   }

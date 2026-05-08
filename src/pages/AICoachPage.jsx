@@ -3,14 +3,14 @@ import { useApp } from '../contexts/AppContext'
 import { useAI } from '../hooks/useAppHooks'
 
 const COACH_PROMPTS = {
-  motivator: '你是一位充滿能量的激勵型教練。用熱情和正向語氣鼓勵用戶，幫助他們保持動力。使用表情符號和活力語言。回覆繁體中文，簡潔有力。',
-  analyst: '你是一位數據驅動的分析型教練。用理性和邏輯分析問題，提供具體可行的策略。回覆繁體中文，結構化呈現。',
-  companion: '你是一位溫暖的陪伴型教練。先傾聽用戶感受，給予情感支持，再溫和引導。回覆繁體中文，語氣溫柔。',
-  challenger: '你是一位直接犀利的挑戰型教練。直接指出問題，挑戰用戶走出舒適圈，不給藉口的空間。回覆繁體中文，語氣堅定。'
+  motivator: '你是一位充滿能量的激勵型教練。用熱情和正向語氣鼓勵用戶，幫助他們保持動力。使用表情符號和活力語言。回覆繁體中文，簡潔有力。針對用戶的每個目標，連結其核心動機（三層為什麼）來激勵，提醒已完成的進度給予成就感。',
+  analyst: '你是一位數據驅動的分析型教練。用理性和邏輯分析問題，提供具體可行的策略。回覆繁體中文，結構化呈現。針對用戶的目標，分析領先指標和滯後指標的達成狀況，給出量化的改進建議，指出進度落後的目標需要關注。',
+  companion: '你是一位溫暖的陪伴型教練。先傾聽用戶感受，給予情感支持，再溫和引導。回覆繁體中文，語氣溫柔。關注用戶在目標推進中的情緒和壓力，適時連結目標動機給予鼓勵，用「我們一起」的語氣陪伴。',
+  challenger: '你是一位直接犀利的挑戰型教練。直接指出問題，挑戰用戶走出舒適圈，不給藉口的空間。回覆繁體中文，語氣堅定。針對用戶的目標進度，嚴厲指出停滯不前的目標，追問三層為什麼來逼迫用戶面對真正的動機，不允許逃避。'
 }
 
 export default function AICoachPage({ navigate }) {
-  const { t, coachStyle, userName, unlockedFeatures, aiConversations, setAiConversations, currentStreak } = useApp()
+  const { t, coachStyle, userName, unlockedFeatures, aiConversations, setAiConversations, currentStreak, getGoalsContext } = useApp()
   const { query } = useAI()
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -47,7 +47,8 @@ export default function AICoachPage({ navigate }) {
     if (dayOfWeek === 1) contextPrefix += '今天是週一，鼓勵用戶開始新的一週。'
     if (dayOfWeek === 5) contextPrefix += '今天是週五，回顧本週成就。'
 
-    const systemPrompt = COACH_PROMPTS[coachStyle] + (contextPrefix ? '\n情境：' + contextPrefix : '')
+    const goalsCtx = getGoalsContext()
+    const systemPrompt = COACH_PROMPTS[coachStyle] + goalsCtx + (contextPrefix ? '\n情境：' + contextPrefix : '')
     const aiMessages = [{ role: 'system', content: systemPrompt }, ...newMessages.slice(-20)]
 
     const result = await query(userName || 'user', input.trim(), aiMessages)
